@@ -1,0 +1,322 @@
+---
+title: "Homework 2"
+author: "Najia Sarker (Student ID: nms3364)"
+date: "2025-01-25"
+output:
+  pdf_document
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, results = FALSE,
+                      fig.align = "center")
+# Uploading all necessary libraries
+library(tidyverse)
+library(knitr)
+
+## Creating initial dataset
+prof <- read.csv("profs.csv")
+bike <- read.csv("bikeshare.csv")
+capmetro <- read.csv("capmetro_UT.csv")
+billboard <- read.csv("billboard.csv")
+
+capmetro = mutate(capmetro,
+  day_of_week = factor(day_of_week,
+  levels=c("Mon", "Tue", "Wed","Thu", "Fri", "Sat", "Sun")),
+  month = factor(month,
+  levels=c("Sep", "Oct","Nov")))
+```
+
+# Link to GitHub: <https://github.com/nsarker2/Homework2>
+
+# Problem 1: Beauty, or not, in the classroom
+
+## Part A
+
+```{r}
+## Creating histogram of course evaluation scores 
+prof |>
+  ggplot() + geom_histogram(aes(x = eval), fill = "darkseagreen", color = "darkseagreen4") +
+  labs (
+    title = "Distribution of Course Evaluation Scores",
+    subtitle = "From Course Evaluation Surveys From 462 UT Austin Courses",
+    x = "Course Evaluation Score",
+    y = "Number of Evaluations"
+  )
+
+## Statistics of distribution
+fivenum(prof$eval, na.rm = TRUE)
+sd(prof$eval, na.rm = TRUE)
+mean(prof$eval, na.rm = TRUE)
+```
+
+This graph illustrates the distribution of course evaluation scores.
+The median score is 4, indicating that most professors are rated quite positively.
+The spread is a minimum of 2.1 to a maximum of 5, which results in a IQR of 2.9.
+The distribution is approximately normal, though there is a slight leftward skew, suggesting a small number of lower-rated evaluations.
+
+## Part B
+
+```{r}
+## Creating histogram of course evaluation scores based on if the professor is a native English speaker
+prof |>
+  ggplot() + geom_boxplot(aes(x = native, y = eval), fill = "darkseagreen", color = "darkseagreen4") +
+  labs (
+    title = "Distribution of Course Evaluation Scores Based on Whether the Professor is a Native English Speaker",
+    subtitle = "From Course Evaluation Surveys From 462 UT Austin Courses",
+    x = "Is the professor a native speaker?",
+    y = "Course Evaluation Score"
+  )
+
+## Statistics of distribution
+prof |>
+  group_by(native) |>
+    summarize(
+      min = min(eval),
+      median = median(eval),
+      max = max(eval),
+      iqr = IQR(eval),
+      standard_deviation = sd(eval)
+    )
+
+```
+
+This graph illustrates the distribution of course evaluation scores based on whether the professor is a native English speaker or not.
+For the non-native English speakers, the median is 3.6, while the median for the native English speakers is 4, which shows that that the native English professors have a higher course evaluation rating.
+The IQR for both distributions are 0.7, with a few outliers for the native English speaker boxplot.
+
+## Part C
+
+```{r}
+## Creating distribution of course evalution scores split by gender
+prof |>
+  ggplot() + geom_histogram(aes(x = eval), fill = "darkseagreen", color = "darkseagreen4") +
+  facet_wrap(~gender) +
+  labs (
+    title = "Distribution of Course Evaluation Scores Split by Gender",
+    subtitle = "From Course Evaluation Surveys From 462 UT Austin Courses",
+    x = "Course Evaluation Score",
+    y = "Number of Evaluations"
+  )
+
+## Statistics of distribution
+prof |>
+  group_by(gender) |>
+    summarize(
+      min = min(eval),
+      median = median(eval),
+      max = max(eval),
+      iqr = IQR(eval),
+      standard_deviation = sd(eval)
+    )
+```
+
+This graph illustrates the distribution of course evaluation scores based on whether the professor's gender.
+For female professors, the median was 3.90, while the male professors had a median of 4.15, suggesting that male professors are rated higher than female professors.
+The male histogram had a higher IQR of 0.8, while the female histogram had an IQR of 0.7, which explains why the male histogram has a bit more of a skew on the left than the female one.
+
+## Part D
+
+```{r}
+## Creating scatterplot of relationship between physical attractiveness and course evaluation score
+prof |>
+  ggplot() + geom_point(aes(x = beauty, y = eval), fill = "darkseagreen", color = "darkseagreen4") +
+  labs (
+    title = "Relationship between Attractiveness and Course Evaluation Scores",
+    subtitle = "From Course Evaluation Surveys From 462 UT Austin Courses",
+    x = "Physical Attractiveness",
+    y = "Course Evaluation Score"
+  )
+## Statistics of distribution
+cor(prof$beauty, prof$eval, use = "complete.obs")
+```
+
+This distribution illustrates the relationship between physical attractiveness and course evaluation scores.
+The correlation between attractiveness and evaluation scores is 0.189, indicating a weak, positive, linear relationship.
+This suggests that while there is some association between physical attractiveness and evaluation scores, physical attractiveness is not a strong predictor of course evaluations.
+
+# Problem 2: bike sharing
+
+## Part A
+
+```{r}
+## Creating subset of average rentals across all hours of the day
+hourly_average <- bike |>
+  group_by(hr) |>
+  summarize(
+    avg_rentals = mean(total, na.rm = TRUE)
+    )
+## Creating line graph 
+hourly_average |>
+  ggplot() + geom_line(aes(x = hr, y = avg_rentals)) +
+  labs(
+    title = "Average Hourly Bike Rentals For All Hours of the Day",
+    subtitle = "From the Capital Bikeshare logs during 2011 and 2012",
+    x = "Hour of the Day",
+    y = "Average Bike Rentals"
+  )
+cor(hourly_average$hr, hourly_average$avg_rentals)
+```
+
+This graph illustrates the relationship between the hour of the day and average bike rentals.
+The correlation between these variables is 0.56, indicating a moderate, positive linear relationship.
+This suggests that bike rentals tend to increase during certain hours of the day, such as around 8 AM and around 4 PM, reflecting a noticeable pattern in rental activity.
+
+## Part B
+
+```{r}
+## Creating subset of average rentals across all hours of the day faceted to whether or not its a working day
+hourly_avg_by_workingday <- bike |>
+  group_by(hr, workingday) |>
+  summarize(avg_rentals = mean(total, na.rm = TRUE))
+ 
+## Creating line graph faceted by working day
+hourly_avg_by_workingday|>
+  ggplot() + geom_line(aes(x = hr, y = avg_rentals)) +
+  facet_wrap(~workingday, labeller = as_labeller(c(`0` = "Non-Working Day", `1` = "Working Day"))) +
+  labs(
+    title = "Average Hourly Bike Rentals For All Hours of the Day split by whether it is a working day",
+    subtitle = "From the Capital Bikeshare logs during 2011 and 2012",
+    x = "Hour of the Day",
+    y = "Average Bike Rentals"
+  )
+
+## Statistics of distribution
+hourly_avg_by_workingday |>
+  group_by(workingday) |>
+  summarize(correlation = cor(hr, avg_rentals))
+```
+These graphs illustrate the relationship between hour of the day and average bike rentals, faceted by whether it is a working day or not. The correlation for non-working days is 0.49, while for working days, it is 0.50, suggesting a moderate, positive, linear relationship in both cases. Despite the similar correlations, the patterns in the graphs differ significantly. On non-working days, there is a single spike in rentals between 12 PM and 4 PM, reflecting mid-day recreational activity. On working days, there are two distinct spikes: one around 8 AM, corresponding to morning commutes, and another around 4 PM, reflecting afternoon commutes.
+
+## Part C
+
+```{r}
+## Create subset of average renters during 9 am grouped by weather situation code and whether it is a working day
+avg_riders_9am <- bike |>
+  filter(hr == 9) |>  
+  group_by(weathersit, workingday) |>
+  summarize(avg_rentals = mean(total, na.rm = TRUE))
+
+## Creating line graph faceted by working day
+avg_riders_9am|>
+  ggplot() + geom_bar(aes(x = factor(weathersit), y = avg_rentals, fill= factor(weathersit)), stat = "identity") +
+  facet_wrap(~workingday, labeller = as_labeller(c(`0` = "Non-Working Day", `1` = "Working Day"))) +
+  labs(
+    title = "Relationship between Average 9 AM Bike Rentals & Weather Situation Code",
+    subtitle = "From the Capital Bikeshare logs during 2011 and 2012 and split by whether it is a working day",
+    x = "Weather Situation Code",
+    y = "Average Bike Rentals",
+    fill = "Weather Situation Code"
+  )
+
+## Statistics of distribution
+
+```
+These graphs illustrate the relationship between the weather situation code and the average bike rentals at 9 AM. On the non-working days, there were the most rentals when the weather situation code was a 1 at around 185, which means the the weather was clear, and there were the least rentals when the weather situation was a 3 at around 75, which means that there could have been light snow, light rain, a thunderstorm, and other light weather. For the working days, there were almost equal rentals when the weather situation code was a 1 and 2 at around 250, 2 meaning that it was either cloudy or misty. Weather situation code 3 still had the least amount of rentals, but almost double the amount of the non-working day rentals at around 140. Overall, these results suggest that most people rent bike at 9 AM when the weather is better, but there are more rentals on working days no matter the weather. 
+
+# Problem 3: Capital Metro UT Ridership
+
+## Part 1
+
+```{r}
+## Create subset of average boardings by hour of day, day of week, and month
+avg_boardings <- capmetro |>
+  group_by(hour_of_day, day_of_week, month) |>
+  summarize(avg_boarding = mean(boarding, na.rm = TRUE))
+
+avg_boardings |>
+  ggplot() + geom_line(aes(x = hour_of_day, y = avg_boarding, color = factor(month))) +
+  facet_wrap(~ day_of_week) +
+  labs(
+    title = "Average Boardings by Hour of Day, Day of Week, and Month",
+    subtitle = "Data from Capital Metro Bus Network (UT Campus, Sept-Nov 2018)",
+    x = "Hour of Day",
+    y = "Average Boardings",
+    color = "Month"
+  )
+  
+```
+These graphs illustrate the average number of boardings by hour of the day across different days of the week (faceted) and are colored by month (September, October, and November) for the Capital Metro Bus Network. The graph highlights distinct boarding patterns for each month and day, with the hour of peak boardings showing clear differences between weekdays and weekends. On weekdays, the highest boarding rates are concentrated around 3-4 PM, with weekends showing a consistent horizontal line throughout the day. On Mondays in September, average boardings are noticeably lower, which could be due to the start of the academic year or fewer early-morning classes. In November, there is a clear dip in average boardings on Wednesday, Thursday, and Friday afternoons, which could be attributed to several factors, including the approaching holiday season or fewer campus events taking place toward the end of the semester.
+
+## Part 2
+
+```{r}
+capmetro |>
+  ggplot() + geom_point(aes(x = temperature, y = boarding, color = weekend)) +
+  facet_wrap(~hour_of_day) +
+  labs(
+    title = "Boardings vs. Temperature by Hour of the Day and Weekend Status",
+    subtitle = "Data from Capital Metro Bus Network (UT Campus, Sept-Nov 2018)",
+    x = "Temperature (°F)",
+    y = "Boardings",
+    color = "Day Type"
+  ) 
+```
+This figure illustrates the average number of UT students riding the bus at different hours of the day, differentiated by weekend status (weekdays vs. weekends), with the temperature shown as a continuous variable. Evidence from the figure shows that, even with temperature variation, the ridership levels remain consistent across different temperature ranges, suggesting that factors like commuting or classes may play a more prominent role in influencing ridership than temperature.
+
+# Problem 4: Wrangling the Billboard Top 100
+
+## Part A
+
+```{r, results = TRUE}
+top_10_songs <- billboard |>
+  group_by(performer, song) |>
+  summarize(count = n_distinct(week)) |>
+  arrange(desc(count)) |>
+  head(10)
+
+kable(top_10_songs, caption = "Top 10 Songs by Weeks on Billboard Chart")
+```
+In this table, the top 10 songs based on how many songs have been on the Billboard 100 for more than 10 weeks from 1953-2021 are displayed. The songs are ranked by the total number of weeks each song spent on the chart, with the highest-ranked song appearing first. The table includes the performer and the song title.
+
+## Part B
+
+```{r}
+# Filter out 1958 and 2021 and wrangle the data
+diversity <- billboard |>
+  filter(year != 1958 & year != 2021) |>
+  group_by(year) |>
+  summarise(unique_songs = n_distinct(song))
+
+diversity |>
+  ggplot(aes(x = year, y = unique_songs)) + geom_line(color = "darkseagreen3") + geom_point(color = "darkseagreen4") +
+  labs(
+    title = "Musical Diversity of the Billboard Top 100 Over Time",
+    subtitle = "Number of Unique Songs Appearing on the Billboard Top 100 Each Year (Excluding 1958 & 2021)",
+    x = "Year",
+    y = "Number of Unique Songs"
+  )
+```
+
+This graph shows how the number of unique songs on the Billboard Top 100 has evolved over time. Excluding the years 1958 and 2021, the chart highlights trends in musical diversity and whether it has increased or decreased over the years. There are spikes in the number of unique songs around 1965 and 2020, which suggest periods of increased diversity in the music industry. These spikes may be indicative of significant shifts in cultural factors influencing the chart at those times.
+
+## Part C
+
+```{r}
+## Identify songs that were ten-week hits
+ten_week_hits <- billboard |>
+  group_by(performer, song) |>
+  summarise(weeks_on_chart = n_distinct(week)) |>
+  filter(weeks_on_chart >= 10)
+
+## Count ten-week hits per artist
+hits_per_artist <- ten_week_hits |>
+  group_by(performer) |>
+  summarise(ten_week_hits = n_distinct(song)) |>
+  filter(ten_week_hits >= 30)
+
+hits_per_artist |>
+  ggplot() + geom_bar(aes(x = reorder(performer, ten_week_hits), y = ten_week_hits), stat = "identity", color = "darkseagreen4", fill = "darkseagreen")+
+  labs(
+    title = "Number of Ten-Week Hits by Artist",
+    subtitle = "Artists with at least 30 songs that appeared on the Billboard Top 100 for at least 10 weeks",
+    x = "Artist",
+    y = "Number of Ten-Week Hits"
+  ) +
+  coord_flip()
+```
+
+This bar plot shows the number of ten-week hits for the top artists who have had at least 30 songs on the Billboard Top 100 for a minimum of 10 weeks. The plot highlights the artists with the most ten-week hits, illustrating their long-term success on the charts. Elton John has the most ten-week hits, with around 52 songs.
+ 
